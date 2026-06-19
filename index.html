@@ -1,61 +1,160 @@
-Title: 流浪地球3
-Genre: 科幻
-Director Name: 郭帆
-Studio: 郭帆文化传媒、中影股份
-Year: 2026
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电影目录 Movies</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        body {
+            background: #f5f7fa;
+            padding: 30px max(20px, 5%);
+        }
+        h1 {
+            text-align: center;
+            color: #222;
+            margin-bottom: 40px;
+        }
+        .movie-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 24px;
+        }
+        .movie-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .movie-card h2 {
+            color: #165DFF;
+            font-size: 20px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .info-row {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        .label {
+            font-weight: bold;
+            color: #444;
+            display: inline-block;
+            width: 90px;
+        }
+        .director-item {
+            display: inline-block;
+            background: #e8f3ff;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin: 2px 4px 2px 0;
+            font-size: 14px;
+        }
+        #loading {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            padding: 60px 0;
+        }
+        .error {
+            color: #f53f3f;
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>电影信息目录（Movies 对象树）</h1>
+    <div id="loading">正在加载 Movies.txt 电影数据...</div>
+    <div class="movie-list" id="container"></div>
 
-Title: 酱园弄悬案
-Genre: 悬疑剧情
-Director Name: 陈可辛
-Studio: 欢喜传媒、中影
-Year: 2025
+    <script>
+        // 页面加载完成自动读取同目录 Movies.txt
+        window.onload = async function() {
+            try {
+                const res = await fetch('./Movies.txt');
+                if (!res.ok) throw new Error("文件读取失败，请确认Movies.txt已上传到仓库根目录");
+                const text = await res.text();
+                const movies = parseMovieTxt(text);
+                renderMovies(movies);
+            } catch (err) {
+                document.getElementById('loading').innerHTML = `<div class="error">加载异常：${err.message}</div>`;
+                console.error(err);
+            }
+        };
 
-Title: 熊出没·重启地球
-Genre: 动画合家欢
-Director Name: 林汇达
-Director Name: 何澄
-Studio: 华强方特、光线彩条屋
-Year: 2026
+        // 解析 Movies.txt 文本，还原题目要求的对象树结构
+        function parseMovieTxt(rawText) {
+            const blocks = rawText.trim().split(/\n\s*\n/); // 空行分割单部电影
+            const movieArr = [];
+            for (const block of blocks) {
+                const lines = block.split('\n').filter(line => line.trim() !== "");
+                const movie = {
+                    Title: "",
+                    Genre: "",
+                    Director: [], // 支持多个导演
+                    Studio: "",
+                    Year: ""
+                };
+                for (const line of lines) {
+                    const [key, val] = line.split(/:\s*/);
+                    if (!key || !val) continue;
+                    switch(key) {
+                        case "Title":
+                            movie.Title = val;
+                            break;
+                        case "Genre":
+                            movie.Genre = val;
+                            break;
+                        case "Director Name":
+                            movie.Director.push(val);
+                            break;
+                        case "Studio":
+                            movie.Studio = val;
+                            break;
+                        case "Year":
+                            movie.Year = val;
+                            break;
+                    }
+                }
+                movieArr.push(movie);
+            }
+            return movieArr;
+        }
 
-Title: 热辣滚烫2
-Genre: 现实喜剧
-Director Name: 贾玲
-Studio: 新丽传媒、大碗娱乐
-Year: 2025
-
-Title: 刀尖
-Genre: 谍战动作
-Director Name: 高群书
-Studio: 博纳影业
-Year: 2024
-
-Title: 只此青绿电影版
-Genre: 舞台文艺
-Director Name: 孟庆旸
-Director Name: 周莉亚
-Studio: 东方演艺集团、阿里影业
-Year: 2025
-
-Title: 消失的游客
-Genre: 惊悚悬疑
-Director Name: 崔睿
-Studio: 恒业影业
-Year: 2026
-
-Title: 飞驰人生3
-Genre: 运动喜剧
-Director Name: 韩寒
-Studio: 亭东影业、博纳
-Year: 2026
-
-Title: 志愿军：山河无恙
-Genre: 历史战争
-Director Name: 陈凯歌
-Studio: 中影、八一电影制片厂
-Year: 2025
-
-Title: 喵星少年漂流记
-Genre: 奇幻儿童
-Director Name: 王宏伟
-Studio: 光线动画、万达影视
-Year: 2024
+        // 渲染电影卡片到页面
+        function renderMovies(movies) {
+            document.getElementById('loading').style.display = "none";
+            const wrap = document.getElementById('container');
+            wrap.innerHTML = "";
+            movies.forEach(m => {
+                const directorsHtml = m.Director.map(name => `<span class="director-item">${name}</span>`).join("");
+                const card = `
+                    <div class="movie-card">
+                        <h2>${m.Title}</h2>
+                        <div class="info-row">
+                            <span class="label">类型：</span>${m.Genre}
+                        </div>
+                        <div class="info-row">
+                            <span class="label">导演：</span>${directorsHtml}
+                        </div>
+                        <div class="info-row">
+                            <span class="label">制片厂：</span>${m.Studio}
+                        </div>
+                        <div class="info-row">
+                            <span class="label">年份：</span>${m.Year}
+                        </div>
+                    </div>
+                `;
+                wrap.innerHTML += card;
+            });
+        }
+    </script>
+</body>
+</html>
